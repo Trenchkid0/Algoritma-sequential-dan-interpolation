@@ -37,6 +37,7 @@ function interpolationSearch(array: Array<any>, target: string): any {
 
 const target = "Wisata Kraton Jogja";
 
+//
 let start = performance.now();
 const result = interpolationSearch(arrays, target);
 
