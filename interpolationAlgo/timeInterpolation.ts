@@ -22,7 +22,7 @@ function interpolationSearch(array: Array<any>, target: string): any {
       );
 
     if (array[pos].name_wisata === target) {
-      return pos;
+      return array[pos].name_wisata;
     }
 
     if (array[pos].name_wisata.localeCompare(target) < 0) {
@@ -37,16 +37,17 @@ function interpolationSearch(array: Array<any>, target: string): any {
 
 const target = "Wisata Kraton Jogja";
 
-//
+//dimulainya waktu sebelum pencarian
 let start = performance.now();
 const result = interpolationSearch(arrays, target);
 
+//waktu sesudah pencarian
 let end = performance.now();
 let runtime = end - start;
 
 console.log(`Algorithm memory: ${runtime} ms`);
 if (result !== -1) {
-  console.log(`Found '${target}' at index ${result}`);
+  console.log(`Found ${result}`);
 } else {
   console.log(`'${target}' not found in the array.`);
 }
