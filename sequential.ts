@@ -3,197 +3,127 @@ import { arrays } from "./merged";
 function sequentialSearch(
   wisatas: Array<any>,
   target: string
-): { index: number; iterations: number } {
-  console.log(wisatas.length);
-  let iterations = 0;
+): { index: number; iterations: number; averageTime: number } {
+  let totalTime = 0;
+  let indexFound = -1;
+  let iterationsCount = 0;
 
-  for (let i = 0; i < wisatas.length; i++) {
-    iterations++;
-    if (wisatas[i].nama === target) {
-      return { index: i, iterations };
+  for (let attempt = 0; attempt < 30; attempt++) {
+    let iterations = 0;
+    const start = performance.now();
+
+    for (let i = 0; i < wisatas.length; i++) {
+      iterations++;
+      if (wisatas[i].title === target) {
+        indexFound = i;
+        break;
+      }
+    }
+
+    const end = performance.now();
+    totalTime += end - start;
+
+    if (attempt === 0) {
+      iterationsCount = iterations;
     }
   }
 
-  return { index: -1, iterations };
+  return {
+    index: indexFound,
+    iterations: iterationsCount,
+    averageTime: totalTime / 30,
+  };
 }
 
-arrays.sort((a, b) => a.nama.localeCompare(b.nama));
+// Urutkan array
+arrays.sort((a, b) => a.title.localeCompare(b.title));
 
-// Test with 10 data points - Begin value
-// Test with 10 data points
-const slicedArray10 = arrays.slice(0, 10);
-let result10Begin = sequentialSearch(slicedArray10, slicedArray10[0].nama);
-console.log(`10 data points - Begin value: ${slicedArray10[0].nama}`);
-console.log(
-  `Index: ${result10Begin.index}, Iterations: ${result10Begin.iterations}`
-);
+// Dataset size yang dipakai
+const testCases = [500, 1000, 2000, 4000];
 
-let result10Middle = sequentialSearch(
-  slicedArray10,
-  slicedArray10[Math.floor(slicedArray10.length / 2)].nama
-);
-console.log(
-  `10 data points - Middle value: ${
-    slicedArray10[Math.floor(slicedArray10.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result10Middle.index}, Iterations: ${result10Middle.iterations}`
-);
+for (const size of testCases) {
+  const slicedArray = arrays.slice(0, size);
 
-let result10End = sequentialSearch(
-  slicedArray10,
-  slicedArray10[slicedArray10.length - 1].nama
-);
-console.log(
-  `10 data points - End value: ${slicedArray10[slicedArray10.length - 1].nama}`
-);
-console.log(
-  `Index: ${result10End.index}, Iterations: ${result10End.iterations}`
-);
+  let totalTime = 0;
+  let totalIterations = 0;
 
-// Test with 100 data points
-const slicedArray100 = arrays.slice(0, 100);
-let result100Begin = sequentialSearch(slicedArray100, slicedArray100[0].nama);
-console.log(`100 data points - Begin value: ${slicedArray100[0].nama}`);
-console.log(
-  `Index: ${result100Begin.index}, Iterations: ${result100Begin.iterations}`
-);
+  // gunakan setiap data sebagai target pencarian
+  for (const item of slicedArray) {
+    const result = sequentialSearch(slicedArray, item.title);
+    totalTime += result.averageTime;
+    totalIterations += result.iterations;
+  }
 
-let result100Middle = sequentialSearch(
-  slicedArray100,
-  slicedArray100[Math.floor(slicedArray100.length / 2)].nama
-);
-console.log(
-  `100 data points - Middle value: ${
-    slicedArray100[Math.floor(slicedArray100.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result100Middle.index}, Iterations: ${result100Middle.iterations}`
-);
+  const avgTime = totalTime / slicedArray.length;
+  const avgIterations = totalIterations / slicedArray.length;
 
-let result100End = sequentialSearch(
-  slicedArray100,
-  slicedArray100[slicedArray100.length - 1].nama
-);
-console.log(
-  `100 data points - End value: ${
-    slicedArray100[slicedArray100.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result100End.index}, Iterations: ${result100End.iterations}`
-);
+  console.log(`Dataset size: ${size}`);
+  console.log(
+    `Average Iterations: ${avgIterations.toFixed(
+      2
+    )}, Average Time: ${avgTime.toFixed(6)} ms`
+  );
+  console.log("-------------------------------------------------");
+}
+// import { arrays } from "./merged";
 
-// Similarly for 1000, 2000, and 3000 data points
-// Test with 1000 data points
-const slicedArray1000 = arrays.slice(0, 1000);
-let result1000Begin = sequentialSearch(
-  slicedArray1000,
-  slicedArray1000[0].nama
-);
-console.log(`1000 data points - Begin value: ${slicedArray1000[0].nama}`);
-console.log(
-  `Index: ${result1000Begin.index}, Iterations: ${result1000Begin.iterations}`
-);
+// function sequentialSearch(
+//   wisatas: Array<any>,
+//   target: string
+// ): { index: number; iterations: number } {
+//   console.log(wisatas.length);
+//   let iterations = 0;
 
-let result1000Middle = sequentialSearch(
-  slicedArray1000,
-  slicedArray1000[Math.floor(slicedArray1000.length / 2)].nama
-);
-console.log(
-  `1000 data points - Middle value: ${
-    slicedArray1000[Math.floor(slicedArray1000.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result1000Middle.index}, Iterations: ${result1000Middle.iterations}`
-);
+//   for (let i = 0; i < wisatas.length; i++) {
+//     iterations++;
+//     if (wisatas[i].title === target) {
+//       return { index: i, iterations };
+//     }
+//   }
 
-let result1000End = sequentialSearch(
-  slicedArray1000,
-  slicedArray1000[slicedArray1000.length - 1].nama
-);
-console.log(
-  `1000 data points - End value: ${
-    slicedArray1000[slicedArray1000.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result1000End.index}, Iterations: ${result1000End.iterations}`
-);
+//   return { index: -1, iterations };
+// }
 
-// Test with 2000 data points
-const slicedArray2000 = arrays.slice(0, 2000);
-let result2000Begin = sequentialSearch(
-  slicedArray2000,
-  slicedArray2000[0].nama
-);
-console.log(`2000 data points - Begin value: ${slicedArray2000[0].nama}`);
-console.log(
-  `Index: ${result2000Begin.index}, Iterations: ${result2000Begin.iterations}`
-);
+// arrays.sort((a, b) => a.title.localeCompare(b.title));
 
-let result2000Middle = sequentialSearch(
-  slicedArray2000,
-  slicedArray2000[Math.floor(slicedArray2000.length / 2)].nama
-);
-console.log(
-  `2000 data points - Middle value: ${
-    slicedArray2000[Math.floor(slicedArray2000.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result2000Middle.index}, Iterations: ${result2000Middle.iterations}`
-);
+// function testSequentialSearch(sizes: number[]) {
+//   for (const size of sizes) {
+//     const slicedArray = arrays.slice(0, size);
 
-let result2000End = sequentialSearch(
-  slicedArray2000,
-  slicedArray2000[slicedArray2000.length - 1].nama
-);
-console.log(
-  `2000 data points - End value: ${
-    slicedArray2000[slicedArray2000.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result2000End.index}, Iterations: ${result2000End.iterations}`
-);
+//     // Begin value
+//     const beginResult = sequentialSearch(slicedArray, slicedArray[0].title);
+//     console.log(`${size} data points - Begin value: ${slicedArray[0].title}`);
+//     console.log(
+//       `Index: ${beginResult.index}, Iterations: ${beginResult.iterations}`
+//     );
 
-// Test with 3000 data points
-const slicedArray3000 = arrays.slice(0, 3000);
-let result3000Begin = sequentialSearch(
-  slicedArray3000,
-  slicedArray3000[0].nama
-);
-console.log(`3000 data points - Begin value: ${slicedArray3000[0].nama}`);
-console.log(
-  `Index: ${result3000Begin.index}, Iterations: ${result3000Begin.iterations}`
-);
+//     // Middle value
+//     const low = 0;
+//     const high = slicedArray.length - 1;
+//     const middleIdx = Math.floor((low + high) / 2);
+//     const middleResult = sequentialSearch(
+//       slicedArray,
+//       slicedArray[middleIdx].title
+//     );
+//     console.log(
+//       `${size} data points - Middle value: ${slicedArray[middleIdx].title}`
+//     );
+//     console.log(
+//       `Index: ${middleResult.index}, Iterations: ${middleResult.iterations}`
+//     );
 
-let result3000Middle = sequentialSearch(
-  slicedArray3000,
-  slicedArray3000[Math.floor(slicedArray3000.length / 2)].nama
-);
-console.log(
-  `3000 data points - Middle value: ${
-    slicedArray3000[Math.floor(slicedArray3000.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result3000Middle.index}, Iterations: ${result3000Middle.iterations}`
-);
+//     // End value
+//     const endIdx = slicedArray.length - 1;
+//     const endResult = sequentialSearch(slicedArray, slicedArray[endIdx].title);
+//     console.log(
+//       `${size} data points - End value: ${slicedArray[endIdx].title}`
+//     );
+//     console.log(
+//       `Index: ${endResult.index}, Iterations: ${endResult.iterations}`
+//     );
 
-let result3000End = sequentialSearch(
-  slicedArray3000,
-  slicedArray3000[slicedArray3000.length - 1].nama
-);
-console.log(
-  `3000 data points - End value: ${
-    slicedArray3000[slicedArray3000.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result3000End.index}, Iterations: ${result3000End.iterations}`
-);
+//     console.log("-------------------------------------------------");
+//   }
+// }
+
+// testSequentialSearch([500, 1000, 2000, 4000]);

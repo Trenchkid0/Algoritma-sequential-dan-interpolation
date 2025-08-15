@@ -1,186 +1,247 @@
 import { arrays } from "./merged";
 
 function adaptiveSearch(
-  wisatas: Array<{ nama: string }>,
+  wisatas: Array<{ title: string }>,
   target: string
-): { index: number; iterations: number } {
-  let left = 0;
-  let right = wisatas.length - 1;
-  let iterations = 0;
+): { index: number; iterations: number; averageTime: number } {
+  let totalTime = 0;
+  let indexFound = -1;
+  let iterationsCount = 0;
 
-  while (left <= right) {
-    iterations++;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    let low = 0;
+    let high = wisatas.length - 1;
+    let iterations = 0;
 
-    const pos =
-      left +
-      Math.floor(
-        (target.localeCompare(wisatas[left].nama) /
-          wisatas[right].nama.localeCompare(wisatas[left].nama)) *
-          (right - left)
-      );
+    const start = performance.now();
+    while (low <= high) {
+      iterations++;
 
-    const mid = Math.max(Math.min(pos, right), left);
+      const targetVal = stringToValue(target);
+      const lowVal = stringToValue(wisatas[low].title);
+      const highVal = stringToValue(wisatas[high].title);
 
-    const comparison = target.localeCompare(wisatas[mid].nama);
+      if (highVal === lowVal) {
+        if (targetVal === lowVal) {
+          indexFound = low;
+        }
+        break;
+      }
 
-    if (comparison === 0) {
-      return { index: mid, iterations };
-    } else if (comparison > 0) {
-      left = mid + 1;
-    } else {
-      right = mid - 1;
+      const pos =
+        low +
+        Math.floor(((high - low) * (targetVal - lowVal)) / (highVal - lowVal));
+
+      const mid = Math.max(Math.min(pos, high), low);
+      const comparison = target.localeCompare(wisatas[mid].title);
+
+      if (comparison === 0) {
+        indexFound = mid;
+        break;
+      } else if (comparison > 0) {
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+
+      // fallback ke binary search jika iterasi terlalu banyak
+      if (iterations > Math.log2(wisatas.length)) {
+        while (low <= high) {
+          iterations++;
+          const binaryMid = Math.floor((low + high) / 2);
+          const binaryComparison = target.localeCompare(
+            wisatas[binaryMid].title
+          );
+
+          if (binaryComparison === 0) {
+            indexFound = binaryMid;
+            break;
+          } else if (binaryComparison > 0) {
+            low = binaryMid + 1;
+          } else {
+            high = binaryMid - 1;
+          }
+        }
+        break;
+      }
     }
 
-    if (iterations > Math.log2(wisatas.length)) {
-      while (left <= right) {
-        iterations++;
-        const binaryMid = Math.floor((left + right) / 2);
-        const binaryComparison = target.localeCompare(wisatas[binaryMid].nama);
+    const end = performance.now();
+    totalTime += end - start;
 
-        if (binaryComparison === 0) {
-          return { index: binaryMid, iterations };
-        } else if (binaryComparison > 0) {
-          left = binaryMid + 1;
-        } else {
-          right = binaryMid - 1;
-        }
-      }
-      break;
+    if (attempt === 0) {
+      iterationsCount = iterations;
     }
   }
 
-  return { index: -1, iterations };
+  return {
+    index: indexFound,
+    iterations: iterationsCount,
+    averageTime: totalTime / 30,
+  };
 }
 
-arrays.sort((a, b) => a.nama.localeCompare(b.nama));
-// Test with 10 data points - Begin value
-// const slicedArray10 = arrays.slice(0, 10);
-// const result10 = adaptiveSearch(slicedArray10, slicedArray10[0].nama);
-// console.log(`10 data points - Begin value: ${slicedArray10[0].nama}`);
-// console.log(`Index: ${result10.index}, Iterations: ${result10.iterations}`);
+// Helper: convert string ke numeric value
+function stringToValue(str: string): number {
+  let sum = 0;
+  for (let i = 0; i < str.length; i++) {
+    sum += str.charCodeAt(i);
+  }
+  return sum;
+}
 
-// const result10 = adaptiveSearch(
-//   slicedArray10,
-//   slicedArray10[Math.floor(slicedArray10.length / 2)].nama
-// );
-// console.log(
-//   `10 data points - Begin value: ${
-//     slicedArray10[Math.floor(slicedArray10.length / 2)].nama
-//   }`
-// );
-// console.log(`Index: ${result10.index}, Iterations: ${result10.iterations}`);
+arrays.sort((a, b) => a.title.localeCompare(b.title));
 
-// const result10 = adaptiveSearch(
-//   slicedArray10,
-//   slicedArray10[slicedArray10.length - 1].nama
-// );
-// console.log(
-//   `10 data points - Begin value: ${
-//     slicedArray10[slicedArray10.length - 1].nama
-//   }`
-// );
-// console.log(`Index: ${result10.index}, Iterations: ${result10.iterations}`);
+function runFullTest(size: number) {
+  const slicedArray = arrays.slice(0, size);
 
-// Test with 100 data points
-const slicedArray100 = arrays.slice(0, 100);
-let result100 = adaptiveSearch(slicedArray100, slicedArray100[0].nama);
-console.log(`100 data points - Begin: ${slicedArray100[0].nama}`);
-console.log(`Index: ${result100.index}, Iterations: ${result100.iterations}`);
+  let totalIterations = 0;
+  let totalTime = 0;
+  let totalFound = 0;
 
-result100 = adaptiveSearch(
-  slicedArray100,
-  slicedArray100[Math.floor(slicedArray100.length / 2)].nama
-);
-console.log(
-  `100 data points - Middle: ${
-    slicedArray100[Math.floor(slicedArray100.length / 2)].nama
-  }`
-);
-console.log(`Index: ${result100.index}, Iterations: ${result100.iterations}`);
+  for (let i = 0; i < slicedArray.length; i++) {
+    const target = slicedArray[i].title;
+    const result = adaptiveSearch(slicedArray, target);
 
-result100 = adaptiveSearch(
-  slicedArray100,
-  slicedArray100[slicedArray100.length - 1].nama
-);
-console.log(
-  `100 data points - End: ${slicedArray100[slicedArray100.length - 1].nama}`
-);
-console.log(`Index: ${result100.index}, Iterations: ${result100.iterations}`);
+    if (result.index !== -1) totalFound++;
+    totalIterations += result.iterations;
+    totalTime += result.averageTime;
+  }
 
-// Test with 1000 data points
-const slicedArray1000 = arrays.slice(0, 1000);
-let result1000 = adaptiveSearch(slicedArray1000, slicedArray1000[0].nama);
-console.log(`1000 data points - Begin: ${slicedArray1000[0].nama}`);
-console.log(`Index: ${result1000.index}, Iterations: ${result1000.iterations}`);
+  console.log(
+    `Size: ${size}, Found: ${totalFound}, Avg Iterations: ${
+      totalIterations / slicedArray.length
+    }, Avg Time: ${totalTime / slicedArray.length}`
+  );
+}
 
-result1000 = adaptiveSearch(
-  slicedArray1000,
-  slicedArray1000[Math.floor(slicedArray1000.length / 2)].nama
-);
-console.log(
-  `1000 data points - Middle: ${
-    slicedArray1000[Math.floor(slicedArray1000.length / 2)].nama
-  }`
-);
-console.log(`Index: ${result1000.index}, Iterations: ${result1000.iterations}`);
+const sizes = [500, 1000, 2000, 4000];
+for (const size of sizes) {
+  runFullTest(size);
+}
 
-result1000 = adaptiveSearch(
-  slicedArray1000,
-  slicedArray1000[slicedArray1000.length - 1].nama
-);
-console.log(
-  `1000 data points - End: ${slicedArray1000[slicedArray1000.length - 1].nama}`
-);
-console.log(`Index: ${result1000.index}, Iterations: ${result1000.iterations}`);
+// import { arrays } from "./merged";
 
-// Test with 2000 data points
-const slicedArray2000 = arrays.slice(0, 2000);
-let result2000 = adaptiveSearch(slicedArray2000, slicedArray2000[0].nama);
-console.log(`2000 data points - Begin: ${slicedArray2000[0].nama}`);
-console.log(`Index: ${result2000.index}, Iterations: ${result2000.iterations}`);
+// function adaptiveSearch(
+//   wisatas: Array<{ title: string }>,
+//   target: string
+// ): { index: number; iterations: number } {
+//   let indexFound = -1;
+//   let iterationsCount = 0;
 
-result2000 = adaptiveSearch(
-  slicedArray2000,
-  slicedArray2000[Math.floor(slicedArray2000.length / 2)].nama
-);
-console.log(
-  `2000 data points - Middle: ${
-    slicedArray2000[Math.floor(slicedArray2000.length / 2)].nama
-  }`
-);
-console.log(`Index: ${result2000.index}, Iterations: ${result2000.iterations}`);
+//   let low = 0;
+//   let high = wisatas.length - 1;
+//   let iterations = 0;
 
-result2000 = adaptiveSearch(
-  slicedArray2000,
-  slicedArray2000[slicedArray2000.length - 1].nama
-);
-console.log(
-  `2000 data points - End: ${slicedArray2000[slicedArray2000.length - 1].nama}`
-);
-console.log(`Index: ${result2000.index}, Iterations: ${result2000.iterations}`);
+//   while (low <= high) {
+//     iterations++;
 
-// Test with 3000 data points
-const slicedArray3000 = arrays.slice(0, 3000);
-let result3000 = adaptiveSearch(slicedArray3000, slicedArray3000[0].nama);
-console.log(`3000 data points - Begin: ${slicedArray3000[0].nama}`);
-console.log(`Index: ${result3000.index}, Iterations: ${result3000.iterations}`);
+//     const targetVal = stringToValue(target);
+//     const lowVal = stringToValue(wisatas[low].title);
+//     const highVal = stringToValue(wisatas[high].title);
 
-result3000 = adaptiveSearch(
-  slicedArray3000,
-  slicedArray3000[Math.floor(slicedArray3000.length / 2)].nama
-);
-console.log(
-  `3000 data points - Middle: ${
-    slicedArray3000[Math.floor(slicedArray3000.length / 2)].nama
-  }`
-);
-console.log(`Index: ${result3000.index}, Iterations: ${result3000.iterations}`);
+//     if (highVal === lowVal) {
+//       if (targetVal === lowVal) {
+//         indexFound = low;
+//       }
+//       break;
+//     }
 
-result3000 = adaptiveSearch(
-  slicedArray3000,
-  slicedArray3000[slicedArray3000.length - 1].nama
-);
-console.log(
-  `3000 data points - End: ${slicedArray3000[slicedArray3000.length - 1].nama}`
-);
-console.log(`Index: ${result3000.index}, Iterations: ${result3000.iterations}`);
+//     const pos =
+//       low +
+//       Math.floor(((high - low) * (targetVal - lowVal)) / (highVal - lowVal));
+
+//     const mid = Math.max(Math.min(pos, high), low);
+//     const comparison = target.localeCompare(wisatas[mid].title);
+
+//     if (comparison === 0) {
+//       indexFound = mid;
+//       break;
+//     } else if (comparison > 0) {
+//       low = mid + 1;
+//     } else {
+//       high = mid - 1;
+//     }
+
+//     // fallback ke binary search jika terlalu banyak iterasi
+//     if (iterations > Math.log2(wisatas.length)) {
+//       while (low <= high) {
+//         iterations++;
+//         const binaryMid = Math.floor((low + high) / 2);
+//         const binaryComparison = target.localeCompare(wisatas[binaryMid].title);
+
+//         if (binaryComparison === 0) {
+//           indexFound = binaryMid;
+//           break;
+//         } else if (binaryComparison > 0) {
+//           low = binaryMid + 1;
+//         } else {
+//           high = binaryMid - 1;
+//         }
+//       }
+//       break;
+//     }
+//   }
+
+//   iterationsCount = iterations;
+
+//   return {
+//     index: indexFound,
+//     iterations: iterationsCount,
+//   };
+// }
+
+// // Helper: convert string to number
+// function stringToValue(str: string): number {
+//   let sum = 0;
+//   for (let i = 0; i < str.length; i++) {
+//     sum += str.charCodeAt(i);
+//   }
+//   return sum;
+// }
+
+// // sort array dulu
+// arrays.sort((a, b) => a.title.localeCompare(b.title));
+
+// function findMiddleValue(
+//   arr: Array<{ title: string }>,
+//   high: number,
+//   low: number
+// ): string {
+//   const midIdx = Math.floor((high + low) / 2);
+//   return arr[midIdx].title;
+// }
+
+// function runTest(size: number, position: "begin" | "middle" | "end") {
+//   const slicedArray = arrays.slice(0, size);
+//   let low = 0;
+//   let high = slicedArray.length - 1;
+//   let target: string;
+
+//   if (position === "begin") {
+//     target = slicedArray[0].title;
+//   } else if (position === "middle") {
+//     target = findMiddleValue(slicedArray, high, low);
+//   } else {
+//     target = slicedArray[slicedArray.length - 1].title;
+//   }
+
+//   const result = adaptiveSearch(slicedArray, target);
+
+//   console.log(
+//     `${size} data points - ${
+//       position.charAt(0).toUpperCase() + position.slice(1)
+//     } value: ${target}`
+//   );
+//   console.log(`Index: ${result.index}, Iterations: ${result.iterations}`);
+// }
+
+// // Sizes and positions to test
+// const sizes = [500, 1000, 2000, 4000];
+// const positions: Array<"begin" | "middle" | "end"> = ["begin", "middle", "end"];
+
+// for (const size of sizes) {
+//   for (const position of positions) {
+//     runTest(size, position);
+//   }
+// }

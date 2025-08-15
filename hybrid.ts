@@ -1,257 +1,238 @@
 import { arrays } from "./merged";
 
 function hybridInterpolationBinarySearch(
-  wisatas: Array<{ nama: string }>,
+  wisatas: Array<{ title: string }>,
   target: string
-): { index: number; iterations: number } {
-  let low = 0;
-  let high = wisatas.length - 1;
-  let iterations = 0;
-  const maxInterpolationIterations = Math.floor(Math.log2(wisatas.length) / 2);
+): { iterations: number; time: number } {
+  let totalTime = 0;
+  let iterationsCount = 0;
 
-  while (
-    low <= high &&
-    target >= wisatas[low].nama &&
-    target <= wisatas[high].nama
-  ) {
-    iterations++;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    let low = 0;
+    let high = wisatas.length - 1;
+    let iterations = 0;
+    const maxInterpolationIterations = Math.floor(
+      Math.log2(wisatas.length) / 2
+    );
 
-    const range = wisatas[high].nama.localeCompare(wisatas[low].nama);
-    if (range === 0) {
-      break;
+    const start = performance.now();
+
+    // Interpolation phase
+    while (
+      low <= high &&
+      target >= wisatas[low].title &&
+      target <= wisatas[high].title
+    ) {
+      iterations++;
+
+      const range = wisatas[high].title.localeCompare(wisatas[low].title);
+      if (range === 0) break;
+
+      const alow = wisatas[low].title;
+      const ahigh = wisatas[high].title;
+      const targetDiff = target.localeCompare(alow);
+      const rangeDiff = ahigh.localeCompare(alow);
+
+      let pos =
+        low +
+        Math.floor(
+          ((high - low) * targetDiff) / (rangeDiff === 0 ? 1 : rangeDiff)
+        );
+
+      pos = Math.max(Math.min(pos, high), low);
+
+      if (wisatas[pos].title === target) break;
+
+      if (wisatas[pos].title < target) {
+        low = pos + 1;
+      } else {
+        high = pos - 1;
+      }
+
+      if (iterations >= maxInterpolationIterations) break;
     }
 
-    let pos =
-      low +
-      Math.floor(
-        (target.localeCompare(wisatas[low].nama) / range) * (high - low)
-      );
+    // Binary search phase
+    while (low <= high) {
+      iterations++;
+      const mid = Math.floor((low + high) / 2);
+      const comparison = target.localeCompare(wisatas[mid].title);
 
-    pos = Math.max(Math.min(pos, high), low);
-
-    if (wisatas[pos].nama === target) {
-      return { index: pos, iterations };
+      if (comparison === 0) break;
+      else if (comparison > 0) low = mid + 1;
+      else high = mid - 1;
     }
 
-    if (wisatas[pos].nama < target) {
-      low = pos + 1;
-    } else {
-      high = pos - 1;
-    }
-
-    if (iterations >= maxInterpolationIterations) {
-      break;
-    }
+    const end = performance.now();
+    totalTime += end - start;
+    iterationsCount += iterations;
   }
 
-  while (low <= high) {
-    iterations++;
-    const mid = Math.floor((low + high) / 2);
-    const comparison = target.localeCompare(wisatas[mid].nama);
-
-    if (comparison === 0) {
-      return { index: mid, iterations };
-    } else if (comparison > 0) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  return { index: -1, iterations };
+  return {
+    iterations: iterationsCount / 30, // rata-rata iterasi per elemen
+    time: totalTime / 30, // rata-rata waktu per elemen
+  };
 }
 
-// Penggunaan
-arrays.sort((a, b) => a.nama.localeCompare(b.nama));
+arrays.sort((a, b) => a.title.localeCompare(b.title));
 
-//begin
-const slicedArray10 = arrays.slice(0, 10);
-const target = slicedArray10[0].nama;
+type TestCase = { size: number; label: string };
 
-const result = hybridInterpolationBinarySearch(arrays, target);
+const testCases: TestCase[] = [
+  { size: 500, label: "500 data points" },
+  { size: 1000, label: "1000 data points" },
+  { size: 2000, label: "2000 data points" },
+  { size: 4000, label: "4000 data points" },
+];
 
-console.log(`10 data points - Begin value: ${slicedArray10[0].nama}`);
-console.log(`Index: ${result.index}, Iterations: ${result.iterations}`);
+for (const { size, label } of testCases) {
+  const sliced = arrays.slice(0, size);
 
-// middle
+  let totalIterations = 0;
+  let totalTime = 0;
 
-const slicedArray10Middle = arrays.slice(0, 10);
-const targetMiddle =
-  slicedArray10Middle[Math.floor(slicedArray10Middle.length / 2)].nama;
+  // 🔑 uji semua elemen
+  for (const item of sliced) {
+    const result = hybridInterpolationBinarySearch(sliced, item.title);
+    totalIterations += result.iterations;
+    totalTime += result.time;
+  }
 
-const resultMiddle = hybridInterpolationBinarySearch(arrays, targetMiddle);
+  const avgIterations = totalIterations / sliced.length;
+  const avgTime = totalTime / sliced.length;
 
-console.log(
-  `10 data points - Middle value: ${
-    slicedArray10Middle[Math.floor(slicedArray10Middle.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${resultMiddle.index}, Iterations: ${resultMiddle.iterations}`
-);
+  console.log(`${label}`);
+  console.log(
+    `Average Iterations: ${avgIterations.toFixed(
+      2
+    )}, Average Time: ${avgTime.toFixed(6)} ms`
+  );
+  console.log("----------------------------------------");
+}
+// import { arrays } from "./merged";
 
-// end
+// function hybridInterpolationBinarySearch(
+//   wisatas: Array<{ title: string }>,
+//   target: string
+// ): { index: number; iterations: number } {
+//   let indexFound = -1;
+//   let iterationsCount = 0;
 
-const slicedArray10End = arrays.slice(0, 10);
-const target10End = slicedArray10End[slicedArray10End.length - 1].nama;
+//   for (let attempt = 0; attempt < 30; attempt++) {
+//     let low = 0;
+//     let high = wisatas.length - 1;
+//     let iterations = 0;
+//     const maxInterpolationIterations = Math.floor(
+//       Math.log2(wisatas.length) / 2
+//     );
 
-const result10End = hybridInterpolationBinarySearch(arrays, target10End);
+//     while (
+//       low <= high &&
+//       target >= wisatas[low].title &&
+//       target <= wisatas[high].title
+//     ) {
+//       iterations++;
 
-console.log(
-  `10 data points - End value: ${
-    slicedArray10End[slicedArray10End.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result10End.index}, Iterations: ${result10End.iterations}`
-);
+//       const range = wisatas[high].title.localeCompare(wisatas[low].title);
+//       if (range === 0) break;
 
-// 100 data points
-const slicedArray100 = arrays.slice(0, 100);
-// begin
-const target100Begin = slicedArray100[0].nama;
-const result100Begin = hybridInterpolationBinarySearch(arrays, target100Begin);
-console.log(`100 data points - Begin value: ${slicedArray100[0].nama}`);
-console.log(
-  `Index: ${result100Begin.index}, Iterations: ${result100Begin.iterations}`
-);
+//       const alow = wisatas[low].title;
+//       const ahigh = wisatas[high].title;
+//       const targetDiff = target.localeCompare(alow);
+//       const rangeDiff = ahigh.localeCompare(alow);
 
-const target100Middle =
-  slicedArray100[Math.floor(slicedArray100.length / 2)].nama;
-const result100Middle = hybridInterpolationBinarySearch(
-  arrays,
-  target100Middle
-);
-console.log(
-  `100 data points - Middle value: ${
-    slicedArray100[Math.floor(slicedArray100.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result100Middle.index}, Iterations: ${result100Middle.iterations}`
-);
+//       let pos =
+//         low +
+//         Math.floor(
+//           ((high - low) * targetDiff) / (rangeDiff === 0 ? 1 : rangeDiff)
+//         );
 
-const target100End = slicedArray100[slicedArray100.length - 1].nama;
-const result100End = hybridInterpolationBinarySearch(arrays, target100End);
-console.log(
-  `100 data points - End value: ${
-    slicedArray100[slicedArray100.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result100End.index}, Iterations: ${result100End.iterations}`
-);
+//       pos = Math.max(Math.min(pos, high), low);
 
-// 1000 data points
-const slicedArray1000 = arrays.slice(0, 1000);
-const target1000Begin = slicedArray1000[0].nama;
-const result1000Begin = hybridInterpolationBinarySearch(
-  arrays,
-  target1000Begin
-);
-console.log(`1000 data points - Begin value: ${slicedArray1000[0].nama}`);
-console.log(
-  `Index: ${result1000Begin.index}, Iterations: ${result1000Begin.iterations}`
-);
+//       if (wisatas[pos].title === target) {
+//         indexFound = pos;
+//         break;
+//       }
 
-const target1000Middle =
-  slicedArray1000[Math.floor(slicedArray1000.length / 2)].nama;
-const result1000Middle = hybridInterpolationBinarySearch(
-  arrays,
-  target1000Middle
-);
-console.log(
-  `1000 data points - Middle value: ${
-    slicedArray1000[Math.floor(slicedArray1000.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result1000Middle.index}, Iterations: ${result1000Middle.iterations}`
-);
+//       if (wisatas[pos].title < target) {
+//         low = pos + 1;
+//       } else {
+//         high = pos - 1;
+//       }
 
-const target1000End = slicedArray1000[slicedArray1000.length - 1].nama;
-const result1000End = hybridInterpolationBinarySearch(arrays, target1000End);
-console.log(
-  `1000 data points - End value: ${
-    slicedArray1000[slicedArray1000.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result1000End.index}, Iterations: ${result1000End.iterations}`
-);
+//       if (iterations >= maxInterpolationIterations) break;
+//     }
 
-// 2000 data points
-const slicedArray2000 = arrays.slice(0, 2000);
-const target2000Begin = slicedArray2000[0].nama;
-const result2000Begin = hybridInterpolationBinarySearch(
-  arrays,
-  target2000Begin
-);
-console.log(`2000 data points - Begin value: ${slicedArray2000[0].nama}`);
-console.log(
-  `Index: ${result2000Begin.index}, Iterations: ${result2000Begin.iterations}`
-);
+//     while (low <= high) {
+//       iterations++;
+//       const mid = Math.floor((low + high) / 2);
+//       const comparison = target.localeCompare(wisatas[mid].title);
 
-const target2000Middle =
-  slicedArray2000[Math.floor(slicedArray2000.length / 2)].nama;
-const result2000Middle = hybridInterpolationBinarySearch(
-  arrays,
-  target2000Middle
-);
-console.log(
-  `2000 data points - Middle value: ${
-    slicedArray2000[Math.floor(slicedArray2000.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result2000Middle.index}, Iterations: ${result2000Middle.iterations}`
-);
+//       if (comparison === 0) {
+//         indexFound = mid;
+//         break;
+//       } else if (comparison > 0) {
+//         low = mid + 1;
+//       } else {
+//         high = mid - 1;
+//       }
+//     }
 
-const target2000End = slicedArray2000[slicedArray2000.length - 1].nama;
-const result2000End = hybridInterpolationBinarySearch(arrays, target2000End);
-console.log(
-  `2000 data points - End value: ${
-    slicedArray2000[slicedArray2000.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result2000End.index}, Iterations: ${result2000End.iterations}`
-);
+//     if (attempt === 0) {
+//       iterationsCount = iterations;
+//     }
+//   }
 
-// 3000 data points
-const slicedArray3000 = arrays.slice(0, 3000);
-const target3000Begin = slicedArray3000[0].nama;
-const result3000Begin = hybridInterpolationBinarySearch(
-  arrays,
-  target3000Begin
-);
-console.log(`3000 data points - Begin value: ${slicedArray3000[0].nama}`);
-console.log(
-  `Index: ${result3000Begin.index}, Iterations: ${result3000Begin.iterations}`
-);
+//   return { index: indexFound, iterations: iterationsCount };
+// }
 
-const target3000Middle =
-  slicedArray3000[Math.floor(slicedArray3000.length / 2)].nama;
-const result3000Middle = hybridInterpolationBinarySearch(
-  arrays,
-  target3000Middle
-);
-console.log(
-  `3000 data points - Middle value: ${
-    slicedArray3000[Math.floor(slicedArray3000.length / 2)].nama
-  }`
-);
-console.log(
-  `Index: ${result3000Middle.index}, Iterations: ${result3000Middle.iterations}`
-);
+// arrays.sort((a, b) => a.title.localeCompare(b.title));
 
-const target3000End = slicedArray3000[slicedArray3000.length - 1].nama;
-const result3000End = hybridInterpolationBinarySearch(arrays, target3000End);
-console.log(
-  `3000 data points - End value: ${
-    slicedArray3000[slicedArray3000.length - 1].nama
-  }`
-);
-console.log(
-  `Index: ${result3000End.index}, Iterations: ${result3000End.iterations}`
-);
+// type TestCase = {
+//   size: number;
+//   label: string;
+// };
+
+// const testCases: TestCase[] = [
+//   { size: 500, label: "500 data points" },
+//   { size: 1000, label: "1000 data points" },
+//   { size: 2000, label: "2000 data points" },
+//   { size: 4000, label: "4000 data points" },
+// ];
+
+// for (const { size, label } of testCases) {
+//   const sliced = arrays.slice(0, size);
+
+//   // Begin
+//   const targetBegin = sliced[0]?.title;
+//   if (targetBegin !== undefined) {
+//     const resultBegin = hybridInterpolationBinarySearch(arrays, targetBegin);
+//     console.log(`${label} - Begin value: ${targetBegin}`);
+//     console.log(
+//       `Index: ${resultBegin.index}, Iterations: ${resultBegin.iterations}`
+//     );
+//   }
+
+//   // Middle
+//   const low = 0;
+//   const high = sliced.length - 1;
+//   const middleIdx = Math.floor((low + high) / 2);
+//   const targetMiddle = sliced[middleIdx]?.title;
+//   if (targetMiddle !== undefined) {
+//     const resultMiddle = hybridInterpolationBinarySearch(arrays, targetMiddle);
+//     console.log(`${label} - Middle value: ${targetMiddle}`);
+//     console.log(
+//       `Index: ${resultMiddle.index}, Iterations: ${resultMiddle.iterations}`
+//     );
+//   }
+
+//   // End
+//   const targetEnd = sliced[sliced.length - 1]?.title;
+//   if (targetEnd !== undefined) {
+//     const resultEnd = hybridInterpolationBinarySearch(arrays, targetEnd);
+//     console.log(`${label} - End value: ${targetEnd}`);
+//     console.log(
+//       `Index: ${resultEnd.index}, Iterations: ${resultEnd.iterations}`
+//     );
+//   }
+// }
